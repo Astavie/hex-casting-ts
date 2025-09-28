@@ -6,4 +6,9 @@ export default antfu(
     type: 'lib',
     pnpm: true,
   },
+  {
+    rules: {
+      'style/max-statements-per-line': 'off',
+    },
+  },
 )
