@@ -65,6 +65,8 @@ export type PossibleVector3
     | [number, number, number]
 
 export class Vector3 implements Iota {
+  public static ZERO: Vector3 = new Vector3(0, 0, 0)
+
   constructor(
     public readonly x: number,
     public readonly y: number,

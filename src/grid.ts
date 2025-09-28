@@ -32,6 +32,8 @@ export type PossibleHexCoord = { readonly q: number, readonly r: number } | [num
 export type PossibleVector2 = { readonly x: number, readonly y: number } | [number, number]
 
 export class Vector2 {
+  public static ZERO: Vector2 = new Vector2(0, 0)
+
   constructor(
     public readonly x: number,
     public readonly y: number,
