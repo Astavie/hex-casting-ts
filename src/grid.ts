@@ -146,16 +146,20 @@ export class HexPattern {
   ) { }
 
   public static parse(str: string): HexPattern {
-    const [l, r] = str.split(',')
+    const [l, r] = str
+      // remove enclosing brackets
+      .replace(/^\(\{\[<+|\)\}\]>+$/g, '')
+      // split at ',' or ' '
+      .split(/,| /)
 
     let startDir: HexDir
     switch (l.toLowerCase()) {
-      case 'northeast': case 'north_east': startDir = HexDir.NORTH_EAST; break
-      case 'east': startDir = HexDir.EAST; break
-      case 'southeast': case 'south_east': startDir = HexDir.SOUTH_EAST; break
-      case 'northwest': case 'north_west': startDir = HexDir.NORTH_WEST; break
-      case 'west': startDir = HexDir.WEST; break
-      case 'southwest': case 'south_west': startDir = HexDir.SOUTH_WEST; break
+      case 'northeast': case 'north_east': case 'ne': startDir = HexDir.NORTH_EAST; break
+      case 'east': case 'e': startDir = HexDir.EAST; break
+      case 'southeast': case 'south_east': case 'se': startDir = HexDir.SOUTH_EAST; break
+      case 'northwest': case 'north_west': case 'nw': startDir = HexDir.NORTH_WEST; break
+      case 'west': case 'w': startDir = HexDir.WEST; break
+      case 'southwest': case 'south_west': case 'sw': startDir = HexDir.SOUTH_WEST; break
       default: throw new Error(`Unknown direction ${l}`)
     }
 
@@ -175,15 +179,15 @@ export class HexPattern {
   }
 
   public toString(): string {
-    let s = ''
+    let s = '<'
 
     switch (this.startDir) {
-      case HexDir.NORTH_EAST: s += 'northeast'; break
-      case HexDir.EAST: s += 'east'; break
-      case HexDir.SOUTH_EAST: s += 'southeast'; break
-      case HexDir.SOUTH_WEST: s += 'southwest'; break
-      case HexDir.WEST: s += 'west'; break
-      case HexDir.NORTH_WEST: s += 'northwest'; break
+      case HexDir.NORTH_EAST: s += 'ne'; break
+      case HexDir.EAST: s += 'e'; break
+      case HexDir.SOUTH_EAST: s += 'se'; break
+      case HexDir.SOUTH_WEST: s += 'sw'; break
+      case HexDir.WEST: s += 'w'; break
+      case HexDir.NORTH_WEST: s += 'nw'; break
     }
 
     s += ','
@@ -199,6 +203,7 @@ export class HexPattern {
       }
     }
 
+    s += '>'
     return s
   }
 

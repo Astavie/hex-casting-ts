@@ -1,49 +1,12 @@
 import { HexPattern } from './grid'
-import { INTROSPECTION, RETROSPECTION, SINGLES, VACANT } from './pattern'
 
 export interface Iota {
   isTruthy: () => boolean
-  tolerates: (that: Iota) => boolean
+  equals: (that: Iota) => boolean
 
   color: () => number
-  display: () => (string | HexPattern | Iota)[]
-}
-
-export type PossibleIota = Iota | PossibleIota[] | boolean | number | string
-export type PossiblePatterns = (Pattern | PossiblePatterns)[]
-
-// eslint-disable-next-line ts/no-redeclare
-export const Iota = {
-  tolerates: (a: Iota, b: Iota): boolean => a.tolerates(b) || b.tolerates(a),
-  from: (iota: PossibleIota): Iota => {
-    if (typeof iota === 'boolean') {
-      return new Boolean(iota)
-    }
-    if (typeof iota === 'number') {
-      return new Double(iota)
-    }
-    if (typeof iota === 'string') {
-      return new String(iota)
-    }
-    if (Array.isArray(iota)) {
-      return new List(iota.map(Iota.from))
-    }
-    return iota
-  },
-  patterns: (...patterns: PossiblePatterns): Pattern[] => {
-    return patterns.flatMap((elem) => {
-      if (Array.isArray(elem)) {
-        if (elem.length === 0) {
-          return [VACANT]
-        }
-        if (elem.length === 1 && Array.isArray(elem[0])) {
-          return [...Iota.patterns(elem[0]), SINGLES]
-        }
-        return [INTROSPECTION, ...Iota.patterns(...elem), RETROSPECTION]
-      }
-      return elem
-    })
-  },
+  display?: () => (string | HexPattern | Iota)[]
+  toString: () => string
 }
 
 export class Boolean implements Iota {
@@ -53,7 +16,7 @@ export class Boolean implements Iota {
     return this.value
   }
 
-  tolerates(that: Iota): boolean {
+  equals(that: Iota): boolean {
     const BooleanIota = Boolean
     return that instanceof BooleanIota && this.value === that.value
   }
@@ -62,8 +25,8 @@ export class Boolean implements Iota {
     return this.value ? 0x00AA00 : 0xAA0000
   }
 
-  display(): (string | HexPattern | Iota)[] {
-    return [this.value ? 'True' : 'False']
+  toString(): string {
+    return this.value ? 'True' : 'False'
   }
 }
 
@@ -80,7 +43,7 @@ export class Double implements Iota {
     return this.value !== 0
   }
 
-  tolerates(that: Iota): boolean {
+  equals(that: Iota): boolean {
     return that instanceof Double && Math.abs(this.value - that.value) < Double.TOLERANCE
   }
 
@@ -88,8 +51,8 @@ export class Double implements Iota {
     return 0x55FF55
   }
 
-  display(): (string | HexPattern | Iota)[] {
-    return [displayNumber(this.value)]
+  toString(): string {
+    return displayNumber(this.value)
   }
 }
 
@@ -100,7 +63,7 @@ export class String implements Iota {
     return this.value.length !== 0
   }
 
-  tolerates(that: Iota): boolean {
+  equals(that: Iota): boolean {
     const StringIota = String
     return that instanceof StringIota && this.value === that.value
   }
@@ -109,8 +72,8 @@ export class String implements Iota {
     return 0xFF55FF
   }
 
-  display(): (string | HexPattern | Iota)[] {
-    return [`"${this.value}"`]
+  toString(): string {
+    return `"${this.value}"`
   }
 }
 
@@ -141,7 +104,7 @@ export class Vector3 implements Iota {
     return this.x !== 0 && this.y !== 0 && this.z !== 0
   }
 
-  tolerates(that: Iota): boolean {
+  equals(that: Iota): boolean {
     if (that instanceof Vector3) {
       const dx = that.x - this.x
       const dy = that.y - this.y
@@ -157,8 +120,8 @@ export class Vector3 implements Iota {
     return 0xFF3030
   }
 
-  display(): (string | HexPattern | Iota)[] {
-    return [`(${displayNumber(this.x)}, ${displayNumber(this.y)}, ${displayNumber(this.z)})`]
+  toString(): string {
+    return `(${displayNumber(this.x)}, ${displayNumber(this.y)}, ${displayNumber(this.z)})`
   }
 }
 
@@ -186,7 +149,7 @@ export class EntityType implements Iota {
     return true
   }
 
-  tolerates(that: Iota): boolean {
+  equals(that: Iota): boolean {
     return this === that
   }
 
@@ -194,8 +157,8 @@ export class EntityType implements Iota {
     return 0x555FF
   }
 
-  display(): (string | HexPattern | Iota)[] {
-    return [`${this.name} Type`]
+  toString(): string {
+    return `${this.name} Type`
   }
 }
 
@@ -212,7 +175,7 @@ export class Entity implements Iota {
     return true
   }
 
-  tolerates(that: Iota): boolean {
+  equals(that: Iota): boolean {
     return this === that
   }
 
@@ -220,17 +183,18 @@ export class Entity implements Iota {
     return 0x55FFFF
   }
 
-  display(): (string | HexPattern | Iota)[] {
-    return [this.name]
+  toString(): string {
+    return this.name
   }
 }
 
 export class Pattern implements Iota {
   public readonly pattern: HexPattern
 
-  constructor(
+  public constructor(
     pattern: HexPattern | string,
     // public readonly action: Action,
+    public readonly mustEscape: boolean = false,
   ) {
     if (typeof pattern === 'string') {
       this.pattern = HexPattern.parse(pattern)
@@ -244,7 +208,7 @@ export class Pattern implements Iota {
     return true
   }
 
-  tolerates(that: Iota): boolean {
+  equals(that: Iota): boolean {
     return that instanceof Pattern && this.pattern.equals(that.pattern)
   }
 
@@ -255,6 +219,10 @@ export class Pattern implements Iota {
   display(): (string | HexPattern | Iota)[] {
     return [this.pattern]
   }
+
+  toString(): string {
+    return this.pattern.toString()
+  }
 }
 
 export class List implements Iota {
@@ -264,10 +232,10 @@ export class List implements Iota {
     return this.values.length !== 0
   }
 
-  tolerates(that: Iota): boolean {
+  equals(that: Iota): boolean {
     return that instanceof List
       && this.values.length === that.values.length
-      && this.values.every((a, i) => Iota.tolerates(a, that.values[i]))
+      && this.values.every((a, i) => a.equals(that.values[i]))
   }
 
   color(): number {
@@ -277,13 +245,15 @@ export class List implements Iota {
   display(): (string | HexPattern | Iota)[] {
     const withCommas = this.values.flatMap((left, i) => {
       if (!(left instanceof Pattern) && i + 1 < this.values.length && !(this.values[i + 1] instanceof Pattern)) {
-        return [left, ',']
+        return [left, ', ']
       }
-      else {
-        return [left]
-      }
+      return left
     })
     return ['[', ...withCommas, ']']
+  }
+
+  toString(): string {
+    return this.display().join('')
   }
 }
 
@@ -291,14 +261,14 @@ export const Garbage: Iota = {
   isTruthy(): boolean {
     return false
   },
-  tolerates(that: Iota): boolean {
+  equals(that: Iota): boolean {
     return that === Garbage
   },
   color(): number {
     return 0x505050
   },
-  display(): (string | HexPattern | Iota)[] {
-    return ['GARBAGE']
+  toString(): string {
+    return 'GARBAGE'
   },
 }
 
@@ -306,14 +276,14 @@ export const Null: Iota = {
   isTruthy(): boolean {
     return false
   },
-  tolerates(that: Iota): boolean {
+  equals(that: Iota): boolean {
     return that === Null
   },
   color(): number {
     return 0xAAAAAA
   },
-  display(): (string | HexPattern | Iota)[] {
-    return ['NULL']
+  toString(): string {
+    return 'NULL'
   },
 }
 
