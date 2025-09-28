@@ -1,17 +1,17 @@
 {
-  "name": "pkg-placeholder",
+  "name": "hexcasting-canvas-ts",
   "type": "module",
   "version": "0.0.0",
   "packageManager": "pnpm@10.17.1",
-  "description": "_description_",
+  "description": "Hex casting library written in typescript",
   "author": "Astavie <astavie@pm.me>",
   "license": "MIT",
-  "homepage": "https://github.com/astavie/pkg-placeholder#readme",
+  "homepage": "https://github.com/astavie/hexcasting-canvas-ts#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/astavie/pkg-placeholder.git"
+    "url": "git+https://github.com/astavie/hexcasting-canvas-ts.git"
   },
-  "bugs": "https://github.com/astavie/pkg-placeholder/issues",
+  "bugs": "https://github.com/astavie/hexcasting-canvas-ts/issues",
   "keywords": [],
   "sideEffects": false,
   "exports": {
