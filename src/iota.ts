@@ -193,6 +193,7 @@ export class Pattern implements Iota {
 
   public constructor(
     pattern: HexPattern | string,
+    public readonly name: string,
     // public readonly action: Action,
     public readonly mustEscape: boolean = false,
   ) {
