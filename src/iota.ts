@@ -114,21 +114,13 @@ export interface BaseEntityProps {
   speed: Vector3
 }
 
-export type EntityProp = keyof BaseEntityProps | (string & {})
-export type EntityProps = Partial<Record<EntityProp, any> & BaseEntityProps>
+export type EntityProps = Partial<Record<(string & {}), any> & BaseEntityProps>
 
 export class EntityType implements Iota {
   constructor(
     public readonly name: string,
-    private readonly properties: EntityProps = {},
+    public readonly properties: Readonly<EntityProps> = {},
   ) { }
-
-  get<K extends EntityProp>(prop: K): EntityProps[K] | undefined
-  get<K extends EntityProp>(prop: K, defaultValue: EntityProps[K]): EntityProps[K]
-
-  get(prop: EntityProp, defaultValue?: any): any {
-    return this.properties[prop] ?? defaultValue
-  }
 
   new(name?: string, properties?: EntityProps): Entity {
     return new Entity(this, name, properties)
@@ -155,19 +147,8 @@ export class Entity implements Iota {
   constructor(
     public readonly type: EntityType,
     public name: string = type.name,
-    private properties: EntityProps = {},
+    public properties: EntityProps = {},
   ) { }
-
-  get<K extends EntityProp>(prop: K): EntityProps[K] | undefined
-  get<K extends EntityProp>(prop: K, defaultValue: EntityProps[K]): EntityProps[K]
-
-  get(prop: EntityProp, defaultValue?: any): any {
-    return this.properties[prop] ?? this.type.get(prop, defaultValue)
-  }
-
-  set<K extends EntityProp>(prop: K, value: EntityProps[K]): void {
-    this.properties[prop] = value
-  }
 
   isTruthy(): boolean {
     return true
