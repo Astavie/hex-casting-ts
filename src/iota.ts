@@ -106,7 +106,7 @@ export class Vector3 implements Iota {
   }
 }
 
-export interface EntityProps {
+export interface BaseEntityProps {
   eyePosition: Vector3
   standingPosition: Vector3
   lookDirection: Vector3
@@ -114,17 +114,24 @@ export interface EntityProps {
   speed: Vector3
 }
 
+export type EntityProp = keyof BaseEntityProps | (string & {})
+export type EntityProps = Partial<Record<EntityProp, any> & BaseEntityProps>
+
 export class EntityType implements Iota {
   constructor(
     public readonly name: string,
-    private readonly properties: Partial<EntityProps> = {},
+    private readonly properties: EntityProps = {},
   ) { }
 
-  get<K extends string>(prop: K): (K extends keyof EntityProps ? EntityProps[K] : unknown) | undefined
-  get<K extends string, V extends (K extends keyof EntityProps ? EntityProps[K] : unknown)>(prop: K, defaultValue: V): V
+  get<K extends EntityProp>(prop: K): EntityProps[K] | undefined
+  get<K extends EntityProp>(prop: K, defaultValue: EntityProps[K]): EntityProps[K]
 
-  get(prop: string, defaultValue?: unknown): any {
-    return (this.properties as any)[prop] ?? defaultValue
+  get(prop: EntityProp, defaultValue?: any): any {
+    return this.properties[prop] ?? defaultValue
+  }
+
+  new(name?: string, properties?: EntityProps): Entity {
+    return new Entity(this, name, properties)
   }
 
   isTruthy(): boolean {
@@ -148,18 +155,18 @@ export class Entity implements Iota {
   constructor(
     public readonly type: EntityType,
     public name: string = type.name,
-    private properties: Partial<EntityProps> = {},
+    private properties: EntityProps = {},
   ) { }
 
-  get<K extends string>(prop: K): (K extends keyof EntityProps ? EntityProps[K] : unknown) | undefined
-  get<K extends string, V extends (K extends keyof EntityProps ? EntityProps[K] : unknown)>(prop: K, defaultValue: V): V
+  get<K extends EntityProp>(prop: K): EntityProps[K] | undefined
+  get<K extends EntityProp>(prop: K, defaultValue: EntityProps[K]): EntityProps[K]
 
-  get(prop: string, defaultValue?: unknown): unknown {
-    return (this.properties as any)[prop] ?? this.type.get(prop, defaultValue)
+  get(prop: EntityProp, defaultValue?: any): any {
+    return this.properties[prop] ?? this.type.get(prop, defaultValue)
   }
 
-  set<K extends string, V extends (K extends keyof EntityProps ? EntityProps[K] : unknown)>(prop: K, value: V): void {
-    (this.properties as any)[prop] = value
+  set<K extends EntityProp>(prop: K, value: EntityProps[K]): void {
+    this.properties[prop] = value
   }
 
   isTruthy(): boolean {
@@ -261,3 +268,5 @@ export const Null: Iota = {
     return ['NULL']
   },
 }
+
+export const Player = new EntityType('Player', { height: 1.8 })
