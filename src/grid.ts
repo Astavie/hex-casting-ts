@@ -21,14 +21,6 @@ export class ResolvedPatternType {
 export enum HexDir {
   NORTH_EAST, EAST, SOUTH_EAST, SOUTH_WEST, WEST, NORTH_WEST,
 }
-const dirDelta: { [key in HexDir]: [number, number] } = [
-  [1, -1],
-  [1, 0],
-  [0, 1],
-  [-1, 1],
-  [-1, 0],
-  [0, -1],
-]
 
 export enum HexAngle {
   FORWARD, RIGHT, RIGHT_BACK, BACK, LEFT_BACK, LEFT,
@@ -36,75 +28,58 @@ export enum HexAngle {
 
 const SQRT_3 = Math.sqrt(3)
 
-export type PossibleHexCoord = { q: number, r: number } | [number, number]
-export type PossibleHexDir = HexDir | PossibleHexCoord
-export type PossibleHexPattern = string | HexPattern
+export type PossibleHexCoord = { readonly q: number, readonly r: number } | [number, number] | HexDir
+export type PossibleVector2 = { readonly x: number, readonly y: number } | [number, number]
 
-export interface Vector2 { x: number, y: number }
-export type PossibleVector2 = Vector2 | [number, number]
+export class Vector2 {
+  constructor(
+    public readonly x: number,
+    public readonly y: number,
+  ) { };
 
-function unpackCoord(dir: PossibleHexDir): [number, number] {
-  if (typeof dir === 'number') {
-    return dirDelta[dir]
+  public static from(vec: PossibleVector2): Vector2 {
+    if (vec instanceof Vector2) {
+      return vec
+    }
+    if (Array.isArray(vec)) {
+      return new Vector2(...vec)
+    }
+    return new Vector2(vec.x, vec.y)
   }
-  else if (Array.isArray(dir)) {
-    return dir
-  }
-  else {
-    return [dir.q, dir.r]
-  }
-}
-
-function unpackVector(vec: PossibleVector2): [number, number] {
-  if (Array.isArray(vec)) {
-    return vec
-  }
-  else {
-    return [vec.x, vec.y]
-  }
-}
-
-type Constructor<Args extends any[], Out> = { new(...args: Args): Out } | ((...args: Args) => Out)
-export type Vector2Constructor<T> = Constructor<[number, number], T>
-
-function isClass<Args extends any[], Out>(v: Constructor<Args, Out>): v is { new(...args: Args): Out } {
-  return v.prototype
-    && v.prototype.constructor
-    && typeof v.prototype.constructor === 'function'
-    && v.prototype.constructor.toString().startsWith('class')
 }
 
 export class HexCoord {
-  public static ORIGIN: HexCoord = new HexCoord()
+  public static ORIGIN: HexCoord = new HexCoord(0, 0)
 
-  public readonly q: number
-  public readonly r: number
+  public static DIR: { [key in HexDir]: HexCoord } = [
+    new HexCoord(1, -1),
+    new HexCoord(1, 0),
+    new HexCoord(0, 1),
+    new HexCoord(-1, 1),
+    new HexCoord(-1, 0),
+    new HexCoord(0, -1),
+  ]
 
-  public constructor()
-  public constructor(from: PossibleHexCoord)
-  public constructor(q: number, r: number)
+  public constructor(
+    public readonly q: number,
+    public readonly r: number,
+  ) { }
 
-  public constructor(one?: PossibleHexCoord | number, two?: number) {
-    if (one === undefined) {
-      this.q = 0
-      this.r = 0
+  public static from(coord: PossibleHexCoord): HexCoord {
+    if (coord instanceof HexCoord) {
+      return coord
     }
-    else if (typeof one === 'number') {
-      this.q = one
-      this.r = two!
+    if (typeof coord === 'number') {
+      return HexCoord.DIR[coord]
     }
-    else if (Array.isArray(one)) {
-      this.q = one[0]
-      this.r = one[1]
+    if (Array.isArray(coord)) {
+      return new HexCoord(...coord)
     }
-    else {
-      this.q = one.q
-      this.r = one.r
-    }
+    return new HexCoord(coord.q, coord.r)
   }
 
   public static snap(vec: PossibleVector2): HexCoord {
-    const [x, y] = unpackVector(vec)
+    const { x, y } = Vector2.from(vec)
 
     let qf = SQRT_3 / 3 * x - 1 / 3 * y
     let rf = 2 / 3 * y
@@ -122,31 +97,19 @@ export class HexCoord {
     }
   }
 
-  public add(dir: PossibleHexDir): HexCoord {
-    const [dq, dr] = unpackCoord(dir)
+  public add(dir: PossibleHexCoord): HexCoord {
+    const { q: dq, r: dr } = HexCoord.from(dir)
     return new HexCoord(this.q + dq, this.r + dr)
   }
 
-  public point(): Vector2
-  public point<T>(constructor: Vector2Constructor<T>): T
-
-  public point<T>(constructor?: Vector2Constructor<T>): T | Vector2 {
+  public point(): Vector2 {
     const x = SQRT_3 * this.q + SQRT_3 / 2 * this.r
     const y = 1.5 * this.r
-
-    if (constructor === undefined) {
-      return { x, y }
-    }
-    else if (isClass(constructor)) {
-      return new constructor(x, y)
-    }
-    else {
-      return constructor(x, y)
-    }
+    return new Vector2(x, y)
   }
 
   public clone(): HexCoord {
-    return new HexCoord(this)
+    return new HexCoord(this.q, this.r)
   }
 
   public equals(other: HexCoord): boolean {
@@ -175,27 +138,10 @@ export class HexCoord {
 }
 
 export class HexPattern {
-  public readonly startDir: HexDir
-  public readonly angles: HexAngle[]
-
-  public constructor(from: PossibleHexPattern)
-  public constructor(startDir: HexDir, angles: HexAngle[])
-
-  public constructor(one: HexDir | PossibleHexPattern, two?: HexAngle[]) {
-    if (typeof one === 'number') {
-      this.startDir = one
-      this.angles = two!
-    }
-    else if (typeof one === 'string') {
-      const parsed = HexPattern.parse(one)
-      this.startDir = parsed.startDir
-      this.angles = parsed.angles
-    }
-    else {
-      this.startDir = one.startDir
-      this.angles = [...one.angles]
-    }
-  }
+  public constructor(
+    public readonly startDir: HexDir,
+    public readonly angles: HexAngle[],
+  ) { }
 
   public static parse(str: string): HexPattern {
     const [l, r] = str.split(',')
@@ -289,7 +235,8 @@ export class HexPattern {
 
   public equals(other: HexPattern): boolean {
     // patterns are equal irrespective of orientation
-    return this.angles.length === other.angles.length && this.angles.every((a, i) => a === other.angles[i])
+    return this.angles.length === other.angles.length
+      && this.angles.every((a, i) => a === other.angles[i])
   }
 
   public coords(): HexCoord[] {
@@ -309,10 +256,7 @@ export class HexPattern {
     return coords
   }
 
-  public points(): Vector2[]
-  public points<T>(constructor: Vector2Constructor<T>): T[]
-
-  public points<T>(constructor?: Vector2Constructor<T>): (T | Vector2)[] {
-    return this.coords().map(c => c.point(constructor!) as (T | Vector2))
+  public points(): Vector2[] {
+    return this.coords().map(c => c.point())
   }
 }
