@@ -1,4 +1,5 @@
-import type { HexPattern } from './grid'
+import { HexPattern } from './grid'
+import { INTROSPECTION, RETROSPECTION, SINGLES, VACANT } from './pattern'
 
 export interface Iota {
   isTruthy: () => boolean
@@ -8,9 +9,41 @@ export interface Iota {
   display: () => (string | HexPattern | Iota)[]
 }
 
+export type PossibleIota = Iota | PossibleIota[] | boolean | number | string
+export type PossiblePatterns = (Pattern | PossiblePatterns)[]
+
 // eslint-disable-next-line ts/no-redeclare
 export const Iota = {
-  tolerates: (a: Iota, b: Iota) => a.tolerates(b) || b.tolerates(a),
+  tolerates: (a: Iota, b: Iota): boolean => a.tolerates(b) || b.tolerates(a),
+  from: (iota: PossibleIota): Iota => {
+    if (typeof iota === 'boolean') {
+      return new Boolean(iota)
+    }
+    if (typeof iota === 'number') {
+      return new Double(iota)
+    }
+    if (typeof iota === 'string') {
+      return new String(iota)
+    }
+    if (Array.isArray(iota)) {
+      return new List(iota.map(Iota.from))
+    }
+    return iota
+  },
+  patterns: (...patterns: PossiblePatterns): Pattern[] => {
+    return patterns.flatMap((elem) => {
+      if (Array.isArray(elem)) {
+        if (elem.length === 0) {
+          return [VACANT]
+        }
+        if (elem.length === 1 && Array.isArray(elem[0])) {
+          return [...Iota.patterns(elem[0]), SINGLES]
+        }
+        return [INTROSPECTION, ...Iota.patterns(...elem), RETROSPECTION]
+      }
+      return elem
+    })
+  },
 }
 
 export class Boolean implements Iota {
@@ -193,10 +226,19 @@ export class Entity implements Iota {
 }
 
 export class Pattern implements Iota {
+  public readonly pattern: HexPattern
+
   constructor(
-    public readonly pattern: HexPattern,
+    pattern: HexPattern | string,
     // public readonly action: Action,
-  ) { }
+  ) {
+    if (typeof pattern === 'string') {
+      this.pattern = HexPattern.parse(pattern)
+    }
+    else {
+      this.pattern = pattern
+    }
+  }
 
   isTruthy(): boolean {
     return true
@@ -216,7 +258,7 @@ export class Pattern implements Iota {
 }
 
 export class List implements Iota {
-  constructor(public readonly values: Iota[]) { }
+  constructor(public readonly values: readonly Iota[]) { }
 
   isTruthy(): boolean {
     return this.values.length !== 0

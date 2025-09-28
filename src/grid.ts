@@ -149,18 +149,18 @@ export class HexPattern {
     const [l, r] = str.split(',')
 
     let startDir: HexDir
-    switch (l) {
-      case 'northeast': startDir = HexDir.NORTH_EAST; break
+    switch (l.toLowerCase()) {
+      case 'northeast': case 'north_east': startDir = HexDir.NORTH_EAST; break
       case 'east': startDir = HexDir.EAST; break
-      case 'southeast': startDir = HexDir.SOUTH_EAST; break
-      case 'northwest': startDir = HexDir.NORTH_WEST; break
+      case 'southeast': case 'south_east': startDir = HexDir.SOUTH_EAST; break
+      case 'northwest': case 'north_west': startDir = HexDir.NORTH_WEST; break
       case 'west': startDir = HexDir.WEST; break
-      case 'southwest': startDir = HexDir.SOUTH_WEST; break
+      case 'southwest': case 'south_west': startDir = HexDir.SOUTH_WEST; break
       default: throw new Error(`Unknown direction ${l}`)
     }
 
     const angles = Array.from(r).map((c) => {
-      switch (c) {
+      switch (c.toLowerCase()) {
         case 'w': return HexAngle.FORWARD
         case 'e': return HexAngle.RIGHT
         case 'd': return HexAngle.RIGHT_BACK
