@@ -171,7 +171,9 @@ export class Entity implements Iota {
     public readonly type: EntityType,
     public name: string = type.name,
     public properties: EntityProps = {},
-  ) { }
+  ) {
+    this.properties = { ...type.properties, ...this.properties }
+  }
 
   isTruthy(): boolean {
     return true
