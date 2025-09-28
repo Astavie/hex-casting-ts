@@ -40,8 +40,8 @@ export type PossibleHexCoord = { q: number, r: number } | [number, number]
 export type PossibleHexDir = HexDir | PossibleHexCoord
 export type PossibleHexPattern = string | HexPattern
 
-export interface Vector { x: number, y: number }
-export type PossibleVector = Vector | [number, number]
+export interface Vector2 { x: number, y: number }
+export type PossibleVector2 = Vector2 | [number, number]
 
 function unpackCoord(dir: PossibleHexDir): [number, number] {
   if (typeof dir === 'number') {
@@ -55,7 +55,7 @@ function unpackCoord(dir: PossibleHexDir): [number, number] {
   }
 }
 
-function unpackVector(vec: PossibleVector): [number, number] {
+function unpackVector(vec: PossibleVector2): [number, number] {
   if (Array.isArray(vec)) {
     return vec
   }
@@ -65,7 +65,7 @@ function unpackVector(vec: PossibleVector): [number, number] {
 }
 
 type Constructor<Args extends any[], Out> = { new(...args: Args): Out } | ((...args: Args) => Out)
-export type VectorConstructor<T> = Constructor<[number, number], T>
+export type Vector2Constructor<T> = Constructor<[number, number], T>
 
 function isClass<Args extends any[], Out>(v: Constructor<Args, Out>): v is { new(...args: Args): Out } {
   return v.prototype
@@ -103,7 +103,7 @@ export class HexCoord {
     }
   }
 
-  public static snap(vec: PossibleVector): HexCoord {
+  public static snap(vec: PossibleVector2): HexCoord {
     const [x, y] = unpackVector(vec)
 
     let qf = SQRT_3 / 3 * x - 1 / 3 * y
@@ -127,10 +127,10 @@ export class HexCoord {
     return new HexCoord(this.q + dq, this.r + dr)
   }
 
-  public point(): Vector
-  public point<T>(constructor: VectorConstructor<T>): T
+  public point(): Vector2
+  public point<T>(constructor: Vector2Constructor<T>): T
 
-  public point<T>(constructor?: VectorConstructor<T>): T | Vector {
+  public point<T>(constructor?: Vector2Constructor<T>): T | Vector2 {
     const x = SQRT_3 * this.q + SQRT_3 / 2 * this.r
     const y = 1.5 * this.r
 
@@ -309,10 +309,10 @@ export class HexPattern {
     return coords
   }
 
-  public points(): Vector[]
-  public points<T>(constructor: VectorConstructor<T>): T[]
+  public points(): Vector2[]
+  public points<T>(constructor: Vector2Constructor<T>): T[]
 
-  public points<T>(constructor?: VectorConstructor<T>): (T | Vector)[] {
-    return this.coords().map(c => c.point(constructor!) as (T | Vector))
+  public points<T>(constructor?: Vector2Constructor<T>): (T | Vector2)[] {
+    return this.coords().map(c => c.point(constructor!) as (T | Vector2))
   }
 }
