@@ -60,6 +60,27 @@ export class Double implements Iota {
   }
 }
 
+export class String implements Iota {
+  constructor(public readonly value: string) { }
+
+  isTruthy(): boolean {
+    return this.value.length !== 0
+  }
+
+  tolerates(that: Iota): boolean {
+    const StringIota = String
+    return that instanceof StringIota && this.value === that.value
+  }
+
+  color(): number {
+    return 0xFF55FF
+  }
+
+  display(): (string | HexPattern | Iota)[] {
+    return [`"${this.value}"`]
+  }
+}
+
 export type PossibleVector3
   = | { readonly x: number, readonly y: number, readonly z: number }
     | [number, number, number]
