@@ -207,8 +207,8 @@ export class HexPattern {
     return s
   }
 
-  public bounds(): [HexCoord, HexCoord] {
-    const coords = this.coords()
+  public bounds(origin = HexCoord.ORIGIN): [HexCoord, HexCoord] {
+    const coords = this.coords(origin)
 
     const minQ = Math.min(...coords.map(c => c.q))
     const maxQ = Math.max(...coords.map(c => c.q))
@@ -246,8 +246,8 @@ export class HexPattern {
       && this.angles.every((a, i) => a === other.angles[i])
   }
 
-  public coords(): HexCoord[] {
-    let currentCoord = HexCoord.ORIGIN
+  public coords(origin = HexCoord.ORIGIN): HexCoord[] {
+    let currentCoord = origin
     let currentDir = this.startDir
 
     const coords: HexCoord[] = [currentCoord]
@@ -263,7 +263,7 @@ export class HexPattern {
     return coords
   }
 
-  public points(): Vector2[] {
-    return this.coords().map(c => c.point())
+  public points(origin = HexCoord.ORIGIN): Vector2[] {
+    return this.coords(origin).map(c => c.point())
   }
 }
