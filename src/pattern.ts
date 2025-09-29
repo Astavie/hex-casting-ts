@@ -3,9 +3,12 @@ import _numbers from './numbers_2000.json'
 
 const numbers = _numbers as { [key: number]: string[] }
 
-export const INTRO = new Pattern('w qqq', 'Introspection', true)
-export const RETRO = new Pattern('e eee', 'Retrospection', true)
-export const CONSIDER = new Pattern('w qqqaw', 'Consideration', true)
+export const INTROSPECTION = new Pattern('w qqq', 'Introspection', true)
+export const RETROSPECTION = new Pattern('e eee', 'Retrospection', true)
+export const CONSIDERATION = new Pattern('w qqqaw', 'Consideration', true)
+
+// abbreviations: refl, purif, distil, exal, decomp, disint, gambit
+// (okay that last one wasn't an abbreviation but you get the idea)
 
 export const VACANT_REFL = new Pattern('ne qqaeaae', 'Vacant Reflection')
 export const SINGLES_PURIF = new Pattern('e adeeed', 'Single\'s Purification')

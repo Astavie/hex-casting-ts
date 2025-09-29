@@ -1,7 +1,7 @@
 import type { HexPattern } from './grid'
 import type { Iota as IotaT, Pattern } from './iota'
 import { Boolean, Double, Garbage, List, Null, String } from './iota'
-import { CONSIDER, INTRO, RETRO, SINGLES_PURIF, VACANT_REFL } from './pattern'
+import { CONSIDERATION, INTROSPECTION, RETROSPECTION, SINGLES_PURIF, VACANT_REFL } from './pattern'
 
 export * from './grid'
 export * from './iota'
@@ -49,14 +49,14 @@ export const Iota = {
               return patterns([inner, SINGLES_PURIF], considerations)
             }
             if (inner.mustEscape) {
-              return patterns([CONSIDER, inner, SINGLES_PURIF], considerations)
+              return patterns([CONSIDERATION, inner, SINGLES_PURIF], considerations)
             }
           }
 
-          return [INTRO, ...patterns(elem, considerations * 2), RETRO]
+          return [INTROSPECTION, ...patterns(elem, considerations * 2), RETROSPECTION]
         }
         if (elem.mustEscape && considerations > 1) {
-          const escaped = Array.from({ length: considerations - 1 }).fill(CONSIDER) as Pattern[]
+          const escaped = Array.from({ length: considerations - 1 }).fill(CONSIDERATION) as Pattern[]
           escaped.push(elem)
           return escaped
         }
