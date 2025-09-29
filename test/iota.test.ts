@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CONSIDER, EntityType, INTRO, Iota, MINDS_REFL, Player, RETRO, SINGLES_PURIF, VACANT_REFL, Vector3 } from '../src'
+import { CONSIDER, EntityType, INTRO, Iota, MINDS_REFL, NUMERICAL_REFL, Player, RETRO, SINGLES_PURIF, VACANT_REFL, Vector3 } from '../src'
 
 describe('flatten pattern list', () => {
   it('empty', () => {
@@ -65,5 +65,10 @@ describe('iota to string', () => {
     expect(Iota.from([0, INTRO]).toString()).toEqual('[0.00<w,qqq>]')
     expect(Iota.from([INTRO, 0]).toString()).toEqual('[<w,qqq>0.00]')
     expect(Iota.from([INTRO, RETRO]).toString()).toEqual('[<w,qqq><e,eee>]')
+  })
+  it('simple numbers', () => {
+    expect(NUMERICAL_REFL(0).toString()).toEqual('<se,aqaa>')
+    expect(NUMERICAL_REFL(69).toString()).toEqual('<se,aqaaedweaaq>')
+    expect(NUMERICAL_REFL(-420).toString()).toEqual('<ne,deddeaqwaawaa>')
   })
 })

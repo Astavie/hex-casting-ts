@@ -160,7 +160,7 @@ export class HexPattern {
       case 'northwest': case 'north_west': case 'nw': startDir = HexDir.NORTH_WEST; break
       case 'west': case 'w': startDir = HexDir.WEST; break
       case 'southwest': case 'south_west': case 'sw': startDir = HexDir.SOUTH_WEST; break
-      default: throw new Error(`Unknown direction ${l}`)
+      default: throw new Error(`unknown direction ${l}`)
     }
 
     const angles = Array.from(r).map((c) => {
@@ -171,7 +171,7 @@ export class HexPattern {
         case 's': return HexAngle.BACK
         case 'a': return HexAngle.LEFT_BACK
         case 'q': return HexAngle.LEFT
-        default: throw new Error(`Unknown angle ${c}`)
+        default: throw new Error(`unknown angle ${c}`)
       }
     })
 

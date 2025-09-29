@@ -56,7 +56,7 @@ export const Iota = {
           return [INTRO, ...patterns(elem, considerations * 2), RETRO]
         }
         if (elem.mustEscape && considerations > 1) {
-          const escaped: Pattern[] = Array.from({ length: considerations - 1 }).fill(CONSIDER)
+          const escaped = Array.from({ length: considerations - 1 }).fill(CONSIDER) as Pattern[]
           escaped.push(elem)
           return escaped
         }
