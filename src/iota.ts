@@ -1,3 +1,4 @@
+import type { Action } from './vm'
 import { HexPattern } from './grid'
 
 export interface Iota {
@@ -194,7 +195,7 @@ export class Pattern implements Iota {
   public constructor(
     pattern: HexPattern | string,
     public readonly name: string,
-    // public readonly action: Action,
+    public readonly action: Action,
     public readonly mustEscape: boolean = false,
   ) {
     if (typeof pattern === 'string') {
@@ -227,6 +228,8 @@ export class Pattern implements Iota {
 }
 
 export class List implements Iota {
+  public static EMPTY: List = new List([])
+
   constructor(public readonly values: readonly Iota[]) { }
 
   isTruthy(): boolean {

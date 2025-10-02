@@ -6,6 +6,7 @@ import { CONSIDERATION, INTROSPECTION, RETROSPECTION } from './pattern'
 export * from './grid'
 export * from './iota'
 export * from './pattern'
+export * from './vm'
 
 // ---- Methods for your convenience ----
 
