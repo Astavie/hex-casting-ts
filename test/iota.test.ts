@@ -1,29 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { CONSIDERATION, EntityType, INTROSPECTION, Iota, MINDS_REFL, NUMERICAL_REFL, Player, RETROSPECTION, SINGLES_PURIF, VACANT_REFL, Vector3 } from '../src'
+import { CONSIDERATION as CONSIDER, EntityType, INTROSPECTION as INTRO, Iota, MINDS_REFL, NUMERICAL_REFL, Player, RETROSPECTION as RETRO, VACANT_REFL, Vector3 } from '../src'
 
 describe('flatten pattern list', () => {
   it('empty', () => {
-    expect(Iota.patterns([])).toEqual([VACANT_REFL])
+    expect(Iota.patterns([])).toEqual([INTRO, RETRO])
   })
   it('nested empty', () => {
-    expect(Iota.patterns([[]])).toEqual([VACANT_REFL, SINGLES_PURIF])
+    expect(Iota.patterns([[]])).toEqual([INTRO, INTRO, RETRO, RETRO])
   })
   it('list', () => {
-    expect(Iota.patterns([MINDS_REFL])).toEqual([INTROSPECTION, MINDS_REFL, RETROSPECTION])
-    expect(Iota.patterns([MINDS_REFL, MINDS_REFL])).toEqual([INTROSPECTION, MINDS_REFL, MINDS_REFL, RETROSPECTION])
+    expect(Iota.patterns([MINDS_REFL])).toEqual([INTRO, MINDS_REFL, RETRO])
+    expect(Iota.patterns([MINDS_REFL, MINDS_REFL])).toEqual([INTRO, MINDS_REFL, MINDS_REFL, RETRO])
   })
   it('nested list', () => {
-    expect(Iota.patterns([[MINDS_REFL]])).toEqual([INTROSPECTION, MINDS_REFL, RETROSPECTION, SINGLES_PURIF])
-    expect(Iota.patterns([[MINDS_REFL, MINDS_REFL]])).toEqual([INTROSPECTION, MINDS_REFL, MINDS_REFL, RETROSPECTION, SINGLES_PURIF])
+    expect(Iota.patterns([[MINDS_REFL]])).toEqual([INTRO, INTRO, MINDS_REFL, RETRO, RETRO])
+    expect(Iota.patterns([[MINDS_REFL, MINDS_REFL]])).toEqual([INTRO, INTRO, MINDS_REFL, MINDS_REFL, RETRO, RETRO])
   })
   it('escaping', () => {
-    for (const pattern of [INTROSPECTION, RETROSPECTION, CONSIDERATION]) {
+    for (const pattern of [INTRO, RETRO, CONSIDER]) {
       expect(Iota.patterns(pattern)).toEqual([pattern])
-      expect(Iota.patterns([pattern])).toEqual([CONSIDERATION, pattern, SINGLES_PURIF])
-      expect(Iota.patterns([pattern, MINDS_REFL])).toEqual([INTROSPECTION, CONSIDERATION, pattern, MINDS_REFL, RETROSPECTION])
-      expect(Iota.patterns([[pattern]])).toEqual([CONSIDERATION, pattern, SINGLES_PURIF, SINGLES_PURIF])
-      expect(Iota.patterns([[pattern, MINDS_REFL]])).toEqual([INTROSPECTION, CONSIDERATION, pattern, MINDS_REFL, RETROSPECTION, SINGLES_PURIF])
-      expect(Iota.patterns([[pattern], MINDS_REFL])).toEqual([INTROSPECTION, CONSIDERATION, CONSIDERATION, CONSIDERATION, pattern, SINGLES_PURIF, MINDS_REFL, RETROSPECTION])
+      expect(Iota.patterns([pattern])).toEqual([INTRO, CONSIDER, pattern, RETRO])
+      expect(Iota.patterns([[pattern]])).toEqual([INTRO, INTRO, CONSIDER, CONSIDER, CONSIDER, pattern, RETRO, RETRO])
     }
   })
 })
@@ -56,15 +53,15 @@ describe('iota to string', () => {
     expect(Player.new('Astavie').toString()).toEqual('Astavie')
   })
   it('pattern', () => {
-    expect(INTROSPECTION.toString()).toEqual('<w,qqq>')
+    expect(INTRO.toString()).toEqual('<w,qqq>')
     expect(VACANT_REFL.toString()).toEqual('<ne,qqaeaae>')
   })
   it('list', () => {
     expect(Iota.from([]).toString()).toEqual('[]')
     expect(Iota.from([0, 0]).toString()).toEqual('[0.00, 0.00]')
-    expect(Iota.from([0, INTROSPECTION]).toString()).toEqual('[0.00<w,qqq>]')
-    expect(Iota.from([INTROSPECTION, 0]).toString()).toEqual('[<w,qqq>0.00]')
-    expect(Iota.from([INTROSPECTION, RETROSPECTION]).toString()).toEqual('[<w,qqq><e,eee>]')
+    expect(Iota.from([0, INTRO]).toString()).toEqual('[0.00<w,qqq>]')
+    expect(Iota.from([INTRO, 0]).toString()).toEqual('[<w,qqq>0.00]')
+    expect(Iota.from([INTRO, RETRO]).toString()).toEqual('[<w,qqq><e,eee>]')
   })
   it('simple numbers', () => {
     expect(NUMERICAL_REFL(0).toString()).toEqual('<se,aqaa>')
