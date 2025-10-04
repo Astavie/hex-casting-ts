@@ -1,4 +1,4 @@
-import type { Action } from './vm'
+import type { Action, CastResult, ContinuationFrame, VM } from './vm'
 import { HexPattern } from './grid'
 
 export interface Iota {
@@ -8,6 +8,83 @@ export interface Iota {
   color: () => number
   display?: () => (string | HexPattern | Iota)[]
   toString: () => string
+
+  execute?: Action
+  type: () => IotaType<Iota>
+}
+
+export type IotaTypeType = IotaType<IotaTypeType>
+
+export class IotaType<T extends Iota> implements Iota {
+  constructor(public readonly name: string, _?: T) { }
+
+  isTruthy(): boolean {
+    return true
+  }
+
+  equals(that: Iota): boolean {
+    return this === that
+  }
+
+  color(): number {
+    return 0x553355
+  }
+
+  toString(): string {
+    return this.name
+  }
+
+  type(): IotaTypeType {
+    return IotaType.IOTA_TYPE
+  }
+
+  public static readonly NULL: IotaType<Iota> = new IotaType('Null')
+  public static readonly DOUBLE: IotaType<Double> = new IotaType('Double')
+  public static readonly BOOLEAN: IotaType<Boolean> = new IotaType('Boolean')
+  public static readonly ENTITY: IotaType<Entity> = new IotaType('Entity')
+  public static readonly LIST: IotaType<List> = new IotaType('List')
+  public static readonly PATTERN: IotaType<Pattern> = new IotaType('Pattern')
+  public static readonly GARBAGE: IotaType<Iota> = new IotaType('Garbage')
+  public static readonly VECTOR: IotaType<Vector3> = new IotaType('Vector')
+  public static readonly JUMP: IotaType<Continuation> = new IotaType('Jump')
+  public static readonly STRING: IotaType<String> = new IotaType('String')
+  public static readonly IOTA_TYPE: IotaTypeType = new IotaType('Iota Type')
+  public static readonly ENTITY_TYPE: IotaType<EntityType> = new IotaType('Entity Type')
+}
+
+export class Continuation implements Iota {
+  constructor(public readonly cont: readonly ContinuationFrame[]) { }
+
+  isTruthy(): boolean {
+    return true
+  }
+
+  equals(that: Iota): boolean {
+    // TODO: check for equality within ContinuationFrame
+    return that instanceof Continuation
+      && this.cont.length === that.cont.length
+      && this.cont.every((a, i) => a === that.cont[i])
+  }
+
+  color(): number {
+    return 0xCC0000
+  }
+
+  display(): string[] {
+    return ['[', 'Jump', ']']
+  }
+
+  toString(): string {
+    return '[Jump]'
+  }
+
+  execute(vm: VM): CastResult {
+    return vm.executeJump(this.cont)
+  }
+
+  type(): IotaType<Continuation> {
+    return IotaType.JUMP
+  }
 }
 
 export class Boolean implements Iota {
@@ -28,6 +105,10 @@ export class Boolean implements Iota {
 
   toString(): string {
     return this.value ? 'True' : 'False'
+  }
+
+  type(): IotaType<Boolean> {
+    return IotaType.BOOLEAN
   }
 }
 
@@ -55,6 +136,10 @@ export class Double implements Iota {
   toString(): string {
     return displayNumber(this.value)
   }
+
+  type(): IotaType<Double> {
+    return IotaType.DOUBLE
+  }
 }
 
 export class String implements Iota {
@@ -75,6 +160,10 @@ export class String implements Iota {
 
   toString(): string {
     return `"${this.value}"`
+  }
+
+  type(): IotaType<String> {
+    return IotaType.STRING
   }
 }
 
@@ -124,6 +213,10 @@ export class Vector3 implements Iota {
   toString(): string {
     return `(${displayNumber(this.x)}, ${displayNumber(this.y)}, ${displayNumber(this.z)})`
   }
+
+  type(): IotaType<Vector3> {
+    return IotaType.VECTOR
+  }
 }
 
 export interface BaseEntityProps {
@@ -161,15 +254,19 @@ export class EntityType implements Iota {
   toString(): string {
     return `${this.name} Type`
   }
+
+  type(): IotaType<EntityType> {
+    return IotaType.ENTITY_TYPE
+  }
 }
 
 export class Entity implements Iota {
   constructor(
-    public readonly type: EntityType,
-    public name: string = type.name,
+    public readonly entity_type: EntityType,
+    public name: string = entity_type.name,
     public properties: EntityProps = {},
   ) {
-    this.properties = { ...type.properties, ...this.properties }
+    this.properties = { ...entity_type.properties, ...this.properties }
   }
 
   isTruthy(): boolean {
@@ -187,6 +284,10 @@ export class Entity implements Iota {
   toString(): string {
     return this.name
   }
+
+  type(): IotaType<Entity> {
+    return IotaType.ENTITY
+  }
 }
 
 export class Pattern implements Iota {
@@ -195,7 +296,7 @@ export class Pattern implements Iota {
   public constructor(
     pattern: HexPattern | string,
     public readonly name: string,
-    public readonly action: Action,
+    public readonly execute: Action,
     public readonly mustEscape: boolean = false,
   ) {
     if (typeof pattern === 'string') {
@@ -224,6 +325,10 @@ export class Pattern implements Iota {
 
   toString(): string {
     return this.pattern.toString()
+  }
+
+  type(): IotaType<Pattern> {
+    return IotaType.PATTERN
   }
 }
 
@@ -259,6 +364,10 @@ export class List implements Iota {
   toString(): string {
     return this.display().join('')
   }
+
+  type(): IotaType<List> {
+    return IotaType.LIST
+  }
 }
 
 export const Garbage: Iota = {
@@ -274,6 +383,9 @@ export const Garbage: Iota = {
   toString(): string {
     return 'GARBAGE'
   },
+  type(): IotaType<Iota> {
+    return IotaType.GARBAGE
+  },
 }
 
 export const Null: Iota = {
@@ -288,6 +400,9 @@ export const Null: Iota = {
   },
   toString(): string {
     return 'NULL'
+  },
+  type(): IotaType<Iota> {
+    return IotaType.NULL
   },
 }
 

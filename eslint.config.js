@@ -9,6 +9,7 @@ export default antfu(
   {
     rules: {
       'style/max-statements-per-line': 'off',
+      'ts/no-this-alias': 'off',
     },
   },
 )

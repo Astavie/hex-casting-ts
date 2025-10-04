@@ -1,7 +1,7 @@
 import type { HexPattern } from './grid'
 import type { Iota as IotaT, Pattern } from './iota'
 import { Boolean, Double, Garbage, List, Null, String } from './iota'
-import { CONSIDERATION, INTROSPECTION, RETROSPECTION } from './pattern'
+import { CONSIDERATION, INTROSPECTION, NUMERICAL_REFL, RETROSPECTION } from './pattern'
 
 export * from './grid'
 export * from './iota'
@@ -11,7 +11,7 @@ export * from './vm'
 // ---- Methods for your convenience ----
 
 export type PossibleIota = IotaT | PossibleIota[] | boolean | number | string | null | undefined
-export type PossiblePatterns = (Pattern | PossiblePatterns)[]
+export type PossiblePatterns = (Pattern | PossiblePatterns | number)[]
 
 export const Iota = {
   display: (a: IotaT): (string | HexPattern | IotaT)[] => a.display?.() ?? [a.toString()],
@@ -39,6 +39,9 @@ export const Iota = {
   patterns: (...list: PossiblePatterns): Pattern[] => {
     function patterns(list: PossiblePatterns, considerations = 1): Pattern[] {
       return list.flatMap((elem) => {
+        if (typeof elem === 'number') {
+          return NUMERICAL_REFL(elem)
+        }
         if (Array.isArray(elem)) {
           return [INTROSPECTION, ...patterns(elem, considerations * 2), RETROSPECTION]
         }
