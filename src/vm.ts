@@ -187,7 +187,7 @@ export class ThothFrame implements ContinuationFrame {
     }
     else {
       // else save the stack to the accumulator and reuse the saved base stack.
-      this.acc.push(...vm.stack)
+      this.acc.push(...vm.stack.toReversed())
       stack = this.baseStack
     }
 
@@ -220,7 +220,7 @@ export class ThothFrame implements ContinuationFrame {
   }
 
   restoreStack(stack: readonly Iota[]): VMChange[] {
-    this.acc.push(...stack)
+    this.acc.push(...stack.toReversed())
     return [
       new StackSet(this.baseStack ?? []),
       new StackPush(new List([...this.acc])),
