@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { CONSIDERATION as CONSIDER, EntityType, INTROSPECTION as INTRO, Iota, MINDS_REFL, NUMERICAL_REFL, Player, RETROSPECTION as RETRO, VACANT_REFL, Vector3 } from '../src'
+import { ARCS_REFL, CIRCLES_REFL, CONSIDERATION as CONSIDER, EntityType, EULERS_REFL, INTROSPECTION as INTRO, Iota, MINDS_REFL, NUMERICAL_REFL, Player, RETROSPECTION as RETRO, VACANT_REFL, Vector3, VECTOR_EXAL } from '../src'
+
+describe('pattern shorthand', () => {
+  it('vector', () => {
+    expect(Iota.patterns(new Vector3(Math.PI * 2, Math.PI, Math.E)))
+      .toEqual([CIRCLES_REFL, ARCS_REFL, EULERS_REFL, VECTOR_EXAL])
+  })
+})
 
 describe('flatten pattern list', () => {
   it('empty', () => {

@@ -211,7 +211,10 @@ export class ThothFrame implements ContinuationFrame {
       newCont = [FramePop]
     }
 
-    const diff = [new StackSet(stack), new StackPush(stackTop, true), ...newCont]
+    const diff = [new StackPush(stackTop, true), ...newCont]
+    // do not run StackSet on the first iteration: is unnecisary
+    if (this.baseStack !== null)
+      diff.unshift(new StackSet(stack))
     return new CastResult(diff, [], ResolvedPatternType.EVALUATED, EvalSound.THOTH)
   }
 

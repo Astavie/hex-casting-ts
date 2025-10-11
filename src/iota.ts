@@ -173,6 +173,12 @@ export type PossibleVector3
 
 export class Vector3 implements Iota {
   public static ZERO: Vector3 = new Vector3(0, 0, 0)
+  public static X: Vector3 = new Vector3(1, 0, 0)
+  public static Y: Vector3 = new Vector3(0, 1, 0)
+  public static Z: Vector3 = new Vector3(0, 0, 1)
+  public static NEG_X: Vector3 = new Vector3(-1, 0, 0)
+  public static NEG_Y: Vector3 = new Vector3(0, -1, 0)
+  public static NEG_Z: Vector3 = new Vector3(0, 0, -1)
 
   constructor(
     public readonly x: number,
