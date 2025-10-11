@@ -1,144 +1,30 @@
-import type { Entity, Iota, IotaType } from './iota'
+import type { Change } from './change'
+import type { Continuation, Entity, Iota, IotaType } from './iota'
 import { List, Pattern } from './iota'
 
-export type Action = (vm: VM, env: Environment) => CastResult | VMChange[] | VMChange
+export type ActionResult = CastResult | Change
+export type Action = ((vm: VM, env: Environment) => ActionResult) | ActionResult
 
 export class CastResult {
   constructor(
-    public readonly diff: readonly VMChange[],
+    public readonly cast: Iota,
+    public readonly diff: Change,
     public readonly sideEffects: readonly SideEffect[] = [],
     public readonly resolutionType: ResolvedPatternType = ResolvedPatternType.EVALUATED,
     public readonly sound: EvalSound = EvalSound.NORMAL_EXECUTE,
   ) { }
-
-  with(change: VMChange): CastResult {
-    return new CastResult(
-      [change, ...this.diff],
-      this.sideEffects,
-      this.resolutionType,
-      this.sound,
-    )
-  }
 }
 
 export interface ContinuationFrame {
   evaluate: (vm: VM, env: Environment) => CastResult
   capturesBreak: () => boolean
-  restoreStack: (stack: readonly Iota[]) => VMChange[]
-}
-
-export const EscapeStart: VMChange = {
-  apply: (vm: VM): VM => vm,
-}
-
-export const EscapeIntro: VMChange = {
-  apply: (vm: VM): VM => vm.copy({ parenCount: vm.parenCount + 1 }),
-}
-
-export const EscapeRetro: VMChange = {
-  apply: (vm: VM): VM => vm.copy({ parenCount: vm.parenCount - 1 }),
-}
-
-export const EscapeConsider: VMChange = {
-  apply: (vm: VM): VM => vm.copy({ escapeNext: true }),
-}
-
-export const EscapeEnd: VMChange = {
-  apply: (vm: VM): VM => vm.copy({
-    stack: [new List(vm.parenthesized.map(p => p.iota)), ...vm.stack],
-    parenthesized: [],
-  }),
-}
-
-export class EscapePush implements VMChange {
-  constructor(public readonly iota: Iota, public readonly escaped: boolean = false) { }
-  apply(vm: VM): VM {
-    return vm.copy({
-      parenthesized: [...vm.parenthesized, { iota: this.iota, escaped: this.escaped }],
-      escapeNext: false,
-    })
-  }
-}
-
-export class StackPush implements VMChange {
-  constructor(public readonly iota: Iota, public readonly fromThoth: boolean = false) { }
-  apply(vm: VM): VM {
-    return vm.copy({
-      stack: [this.iota, ...vm.stack],
-      escapeNext: false,
-    })
-  }
-}
-
-export class StackPop implements VMChange {
-  constructor(public readonly count: number = 1) { }
-  apply(vm: VM): VM { return vm.copy({ stack: vm.stack.toSpliced(0, this.count) }) }
-}
-
-export class StackSet implements VMChange {
-  constructor(public readonly iotas: readonly Iota[]) { }
-  apply(vm: VM): VM {
-    return vm.copy({
-      stack: this.iotas,
-      escapeNext: false,
-    })
-  }
-}
-
-export const StackListSingleton: VMChange = {
-  apply: (vm: VM): VM => {
-    const [head, ...rest] = vm.stack
-    return vm.copy({ stack: [new List([head]), ...rest] })
-  },
-}
-
-export class StackListInsert implements VMChange {
-  constructor(public readonly index: number) { }
-  apply(vm: VM): VM {
-    const [element, list, ...rest] = vm.stack as [Iota, List, ...Iota[]]
-    const newList = new List(list.values.toSpliced(this.index, 0, element))
-    return vm.copy({ stack: [newList, ...rest] })
-  }
-}
-
-export class StackListRemove implements VMChange {
-  constructor(public readonly index: number) { }
-  apply(vm: VM): VM {
-    const [list, ...rest] = vm.stack as [List, ...Iota[]]
-    const element = list.values[this.index]
-    const newList = new List(list.values.toSpliced(this.index, 1))
-    return vm.copy({ stack: [element, newList, ...rest] })
-  }
-}
-
-export const FramePop: VMChange = {
-  apply: (vm: VM): VM => vm.copy({ frames: vm.frames.toSpliced(0, 1) }),
-}
-
-export class FrameNext implements VMChange {
-  constructor(public readonly frame: ContinuationFrame) { }
-  apply(vm: VM): VM { return vm.copy({ frames: vm.frames.with(0, this.frame) }) }
-}
-
-export class FramePush implements VMChange {
-  constructor(public readonly frame: ContinuationFrame, public readonly iotas: readonly Iota[], public readonly fromStack: boolean = false) { }
-  apply(vm: VM): VM {
-    return vm.copy({
-      frames: [this.frame, ...vm.frames],
-      stack: this.fromStack ? vm.stack.toSpliced(0, 1) : vm.stack,
-    })
-  }
-}
-
-export class FrameSet implements VMChange {
-  constructor(public readonly cont: readonly ContinuationFrame[]) { }
-  apply(vm: VM): VM { return vm.copy({ frames: this.cont }) }
+  restoreStack: (stack: readonly Iota[]) => Change
+  display: () => readonly Iota[]
 }
 
 export class HermesFrame implements ContinuationFrame {
   constructor(
     public readonly patterns: readonly Iota[],
-    public readonly isMetacasting: boolean,
     public readonly capturesBrk: boolean,
   ) { }
 
@@ -146,18 +32,18 @@ export class HermesFrame implements ContinuationFrame {
     const [head, ...rest] = this.patterns
     const pattern = head
 
-    let newCont: VMChange
+    const newCont: Change = { framePop: 1 }
+    const frame = new HermesFrame(rest, this.capturesBrk)
     if (rest.length > 0) {
-      newCont = new FrameNext(new HermesFrame(rest, this.isMetacasting, this.capturesBrk))
-    }
-    else {
-      newCont = FramePop
+      newCont.framePush = [frame]
     }
 
-    const result = newCont.apply(vm).execute(pattern, env).with(newCont)
-    if (this.isMetacasting && result.sound !== EvalSound.MISHASP) {
-      return new CastResult(result.diff, result.sideEffects, result.resolutionType, EvalSound.HERMES)
+    const result = vm.apply(newCont).execute(pattern, env)
+    if (rest.length > 0) {
+      const existingFrames = result.diff.framePush ?? []
+      result.diff.framePush = [frame, ...existingFrames]
     }
+    result.diff.framePop = (result.diff.framePop ?? 0) + 1
     return result
   }
 
@@ -165,8 +51,12 @@ export class HermesFrame implements ContinuationFrame {
     return this.capturesBrk
   }
 
-  restoreStack(): VMChange[] {
-    return []
+  restoreStack(): Change {
+    return {}
+  }
+
+  display(): readonly Iota[] {
+    return this.patterns
   }
 }
 
@@ -187,47 +77,48 @@ export class ThothFrame implements ContinuationFrame {
     }
     else {
       // else save the stack to the accumulator and reuse the saved base stack.
-      this.acc.push(...vm.stack.toReversed())
+      this.acc.push(...vm.stack)
       stack = this.baseStack
     }
 
     // If we still have data to process...
-    let stackTop: Iota
-    let newCont: VMChange[]
+    const image2: Change = {
+      framePop: 1,
+      stackSet: this.baseStack !== null ? stack : undefined,
+    }
     if (this.data.length) {
       // push the next datum to the top of the stack,
       const [head, ...rest] = this.data
-      stackTop = head
-      newCont = [
+      image2.stackPush = [head]
+      image2.framePush = [
         // put the next Thoth object back on the stack for the next Thoth cycle,
-        new FrameNext(new ThothFrame(rest, this.code, stack, this.acc)),
+        new ThothFrame(rest, this.code, stack, this.acc),
         // and prep the Thoth'd code block for evaluation.
-        new FramePush(new HermesFrame(this.code, true, false), this.code),
+        new HermesFrame(this.code, false),
       ]
     }
     else {
-      // Else, dump our final list onto the stack.
-      stackTop = new List([...this.acc])
-      newCont = [FramePop]
+      // else, dump our final list onto the stack.
+      image2.stackPush = [new List([...this.acc])]
     }
 
-    const diff = [new StackPush(stackTop, true), ...newCont]
-    // do not run StackSet on the first iteration: is unnecisary
-    if (this.baseStack !== null)
-      diff.unshift(new StackSet(stack))
-    return new CastResult(diff, [], ResolvedPatternType.EVALUATED, EvalSound.THOTH)
+    return new CastResult(new List(this.code), image2, [], ResolvedPatternType.EVALUATED, EvalSound.THOTH)
   }
 
   capturesBreak(): boolean {
     return true
   }
 
-  restoreStack(stack: readonly Iota[]): VMChange[] {
-    this.acc.push(...stack.toReversed())
-    return [
-      new StackSet(this.baseStack ?? []),
-      new StackPush(new List([...this.acc])),
-    ]
+  restoreStack(stack: readonly Iota[]): Change {
+    this.acc.push(...stack)
+    return {
+      stackSet: this.baseStack ?? [],
+      stackPush: [new List([...this.acc])],
+    }
+  }
+
+  display(): readonly Iota[] {
+    return this.data
   }
 }
 
@@ -237,10 +128,6 @@ export interface Environment {
 
 export interface SideEffect {
   apply: (env: Environment) => void
-}
-
-export interface VMChange {
-  apply: (vm: VM) => VM
 }
 
 export interface ParenthesizedIota {
@@ -266,8 +153,8 @@ export class VM {
 
     const result: any[] = []
     for (let i = 0; i < tys.length; i++) {
-      const ty = tys[tys.length - 1 - i]
-      const iota = this.stack[i]
+      const ty = tys[i]
+      const iota = this.stack[this.stack.length - tys.length + i]
       if (ty !== null && !iota.type().equals(ty)) {
         throw new Error('TODO: MISHAP')
       }
@@ -276,72 +163,99 @@ export class VM {
     return result as any
   }
 
-  apply(...diff: readonly VMChange[]): VM {
-    let vm: VM = this
-    for (const change of diff) {
-      vm = change.apply(vm)
-    }
-    return vm
-  }
+  apply(...diff: readonly Change[]): VM {
+    let parenCount = this.parenCount
+    let parenthesized = this.parenthesized
+    let escapeNext = this.escapeNext
+    let stack = this.stack
+    let frames = this.frames
 
-  copy(params: {
-    readonly stack?: readonly Iota[]
-    readonly frames?: readonly ContinuationFrame[]
-    readonly parenCount?: number
-    readonly parenthesized?: readonly ParenthesizedIota[]
-    readonly escapeNext?: boolean
-  }): VM {
-    return new VM(
-      params.stack ?? this.stack,
-      params.frames ?? this.frames,
-      params.parenCount ?? this.parenCount,
-      params.parenthesized ?? this.parenthesized,
-      params.escapeNext ?? this.escapeNext,
-    )
+    for (const change of diff) {
+      parenCount = parenCount + (change.escapeIntro ? 1 : 0) - (change.escapeRetro ? 1 : 0)
+
+      if (parenCount === 0) {
+        parenthesized = []
+      }
+      if (change.escapePush) {
+        parenthesized = [...parenthesized, { iota: change.escapePush, escaped: escapeNext }]
+      }
+
+      escapeNext = change.escapeConsider ?? (escapeNext && change.escapePush === undefined)
+
+      if (change.stackSet) {
+        stack = change.stackSet
+      }
+      if (change.stackPop) {
+        stack = stack.toSpliced(stack.length - change.stackPop, change.stackPop)
+      }
+      if (change.stackMove) {
+        const iota = stack[change.stackMove.from]
+        stack = stack.toSpliced(change.stackMove.from, 1).toSpliced(change.stackMove.to, 0, iota)
+      }
+      if (change.stackPush) {
+        stack = [...stack, ...change.stackPush]
+      }
+
+      if (change.frameSet) {
+        frames = change.frameSet
+      }
+      if (change.framePop) {
+        frames = frames.toSpliced(frames.length - 1, 1)
+      }
+      if (change.framePush) {
+        frames = [...frames, ...change.framePush]
+      }
+    }
+
+    return new VM(stack, frames, parenCount, parenthesized, escapeNext)
   }
 
   step(env: Environment): CastResult | null {
-    return this.frames[0]?.evaluate(this, env) ?? null
+    return this.frames[this.frames.length - 1]?.evaluate(this, env) ?? null
   }
 
   run(env: Environment, ...iotas: Iota[]): VM {
     let vm: VM = this
+
+    for (const iota of iotas) {
+      let result = vm.step(env)
+      while (result !== null) {
+        vm = vm.apply(result.diff)
+        result = vm.step(env)
+      }
+      result = vm.execute(iota, env)
+      vm = vm.apply(result.diff)
+    }
+
     let result = vm.step(env)
     while (result !== null) {
-      vm = vm.apply(...result.diff)
+      vm = vm.apply(result.diff)
       result = vm.step(env)
     }
-    if (iotas.length) {
-      const [head, ...rest] = iotas
-      result = vm.execute(head, env)
-      return vm.apply(...result.diff).run(env, ...rest)
-    }
+
     return vm
   }
 
-  executeJump(cont: readonly ContinuationFrame[]): CastResult {
-    return new CastResult([new FrameSet(cont)], [], ResolvedPatternType.EVALUATED, EvalSound.HERMES)
+  executeJump(iota: Continuation): CastResult {
+    return new CastResult(iota, { frameSet: iota.cont }, [], ResolvedPatternType.EVALUATED, EvalSound.HERMES)
   }
 
   execute(iota: Iota, env: Environment): CastResult {
     if (iota.execute && !this.escapeNext && (!this.parenCount || (iota instanceof Pattern && iota.mustEscape))) {
-      const result = iota.execute(this, env)
+      const result = typeof iota.execute === 'function' ? iota.execute(this, env) : iota.execute
       if (result instanceof CastResult) {
         return result
       }
-      if (Array.isArray(result)) {
-        return new CastResult(result)
-      }
-      return new CastResult([result])
+      return new CastResult(iota, result)
     }
 
     if (this.escapeNext || this.parenCount) {
-      const change = this.parenCount ? new EscapePush(iota, this.escapeNext) : new StackPush(iota)
-      return new CastResult([change], [], ResolvedPatternType.ESCAPED, EvalSound.NORMAL_EXECUTE)
+      const change: Change = this.parenCount ? { escapePush: iota } : { stackPush: [iota] }
+      return new CastResult(iota, change, [], ResolvedPatternType.ESCAPED, EvalSound.NORMAL_EXECUTE)
     }
 
     // TODO: MishapUnescapedValue ?
-    return new CastResult([], [], ResolvedPatternType.INVALID, EvalSound.MISHASP)
+    return new CastResult(iota, {}, [], ResolvedPatternType.INVALID, EvalSound.MISHASP)
   }
 }
 

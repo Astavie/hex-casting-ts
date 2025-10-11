@@ -10,8 +10,8 @@ it('thoths', () => {
     },
   }
 
-  const iotas = Iota.patterns(0, [1, 2, 3], [HERMES_GAMBIT], THOTHS_GAMBIT)
+  const iotas = Iota.patterns(0, [HERMES_GAMBIT], [1, 2, 3], THOTHS_GAMBIT)
   const end = VM.START.run(env, ...iotas)
-  expect(end.stack).toEqual([[0, 1, 0, 2, 0, 3], 0].map(Iota.from))
+  expect(end.stack).toEqual([0, [0, 1, 0, 2, 0, 3]].map(Iota.from))
   expect(end.parenthesized).toEqual([])
 })

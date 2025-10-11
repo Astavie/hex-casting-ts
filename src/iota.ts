@@ -79,7 +79,7 @@ export class Continuation implements Iota {
   }
 
   execute(vm: VM): CastResult {
-    return vm.executeJump(this.cont)
+    return vm.executeJump(this)
   }
 
   type(): IotaType<Continuation> {
