@@ -19,7 +19,6 @@ export interface ContinuationFrame {
   evaluate: (vm: VM, env: Environment) => CastResult
   capturesBreak: () => boolean
   restoreStack: (stack: readonly Iota[]) => Change
-  display: () => readonly Iota[]
 }
 
 export class HermesFrame implements ContinuationFrame {
@@ -53,10 +52,6 @@ export class HermesFrame implements ContinuationFrame {
 
   restoreStack(): Change {
     return {}
-  }
-
-  display(): readonly Iota[] {
-    return this.patterns
   }
 }
 
@@ -115,10 +110,6 @@ export class ThothFrame implements ContinuationFrame {
       stackSet: this.baseStack ?? [],
       stackPush: [new List([...this.acc])],
     }
-  }
-
-  display(): readonly Iota[] {
-    return this.data
   }
 }
 
