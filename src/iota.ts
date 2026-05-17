@@ -5,12 +5,12 @@ export interface Iota {
   isTruthy: () => boolean
   equals: (that: Iota) => boolean
 
-  color: () => number
   display?: () => (string | HexPattern | Iota)[]
   toString: () => string
 
   execute?: Action
-  type: () => IotaType<Iota>
+  type: IotaType<Iota>
+  color: number
 }
 
 export type IotaTypeType = IotaType<IotaTypeType>
@@ -26,7 +26,7 @@ export class IotaType<T extends Iota> implements Iota {
     return this === that
   }
 
-  color(): number {
+  get color(): number {
     return 0x553355
   }
 
@@ -34,7 +34,7 @@ export class IotaType<T extends Iota> implements Iota {
     return this.name
   }
 
-  type(): IotaTypeType {
+  get type(): IotaTypeType {
     return IotaType.IOTA_TYPE
   }
 
@@ -66,7 +66,7 @@ export class Continuation implements Iota {
       && this.cont.every((a, i) => a === that.cont[i])
   }
 
-  color(): number {
+  get color(): number {
     return 0xCC0000
   }
 
@@ -82,7 +82,7 @@ export class Continuation implements Iota {
     return vm.executeJump(this)
   }
 
-  type(): IotaType<Continuation> {
+  get type(): IotaType<Continuation> {
     return IotaType.JUMP
   }
 }
@@ -99,7 +99,7 @@ export class Boolean implements Iota {
     return that instanceof BooleanIota && this.value === that.value
   }
 
-  color(): number {
+  get color(): number {
     return this.value ? 0x00AA00 : 0xAA0000
   }
 
@@ -107,7 +107,7 @@ export class Boolean implements Iota {
     return this.value ? 'True' : 'False'
   }
 
-  type(): IotaType<Boolean> {
+  get type(): IotaType<Boolean> {
     return IotaType.BOOLEAN
   }
 }
@@ -129,7 +129,7 @@ export class Double implements Iota {
     return that instanceof Double && Math.abs(this.value - that.value) < Double.TOLERANCE
   }
 
-  color(): number {
+  get color(): number {
     return 0x55FF55
   }
 
@@ -137,7 +137,7 @@ export class Double implements Iota {
     return displayNumber(this.value)
   }
 
-  type(): IotaType<Double> {
+  get type(): IotaType<Double> {
     return IotaType.DOUBLE
   }
 }
@@ -154,7 +154,7 @@ export class String implements Iota {
     return that instanceof StringIota && this.value === that.value
   }
 
-  color(): number {
+  get color(): number {
     return 0xFF55FF
   }
 
@@ -162,7 +162,7 @@ export class String implements Iota {
     return `"${this.value}"`
   }
 
-  type(): IotaType<String> {
+  get type(): IotaType<String> {
     return IotaType.STRING
   }
 }
@@ -212,7 +212,7 @@ export class Vector3 implements Iota {
     }
   }
 
-  color(): number {
+  get color(): number {
     return 0xFF3030
   }
 
@@ -220,7 +220,11 @@ export class Vector3 implements Iota {
     return `(${displayNumber(this.x)}, ${displayNumber(this.y)}, ${displayNumber(this.z)})`
   }
 
-  type(): IotaType<Vector3> {
+  display(): string[] {
+    return ['(', displayNumber(this.x), ', ', displayNumber(this.y), ', ', displayNumber(this.z), ')']
+  }
+
+  get type(): IotaType<Vector3> {
     return IotaType.VECTOR
   }
 }
@@ -253,7 +257,7 @@ export class EntityType implements Iota {
     return this === that
   }
 
-  color(): number {
+  get color(): number {
     return 0x555FF
   }
 
@@ -261,7 +265,7 @@ export class EntityType implements Iota {
     return `${this.name} Type`
   }
 
-  type(): IotaType<EntityType> {
+  get type(): IotaType<EntityType> {
     return IotaType.ENTITY_TYPE
   }
 }
@@ -283,7 +287,7 @@ export class Entity implements Iota {
     return this === that
   }
 
-  color(): number {
+  get color(): number {
     return 0x55FFFF
   }
 
@@ -291,7 +295,7 @@ export class Entity implements Iota {
     return this.name
   }
 
-  type(): IotaType<Entity> {
+  get type(): IotaType<Entity> {
     return IotaType.ENTITY
   }
 }
@@ -321,7 +325,7 @@ export class Pattern implements Iota {
     return that instanceof Pattern && this.pattern.equals(that.pattern)
   }
 
-  color(): number {
+  get color(): number {
     return 0xFFAA00
   }
 
@@ -333,7 +337,7 @@ export class Pattern implements Iota {
     return this.pattern.toString()
   }
 
-  type(): IotaType<Pattern> {
+  get type(): IotaType<Pattern> {
     return IotaType.PATTERN
   }
 }
@@ -353,13 +357,13 @@ export class List implements Iota {
       && this.values.every((a, i) => a.equals(that.values[i]))
   }
 
-  color(): number {
+  get color(): number {
     return 0xAA00AA
   }
 
   display(): (string | HexPattern | Iota)[] {
     const withCommas = this.values.flatMap((left, i) => {
-      if (!(left instanceof Pattern) && i + 1 < this.values.length && !(this.values[i + 1] instanceof Pattern)) {
+      if (i + 1 < this.values.length && !(left instanceof Pattern && this.values[i + 1] instanceof Pattern)) {
         return [left, ', ']
       }
       return left
@@ -371,7 +375,7 @@ export class List implements Iota {
     return this.display().join('')
   }
 
-  type(): IotaType<List> {
+  get type(): IotaType<List> {
     return IotaType.LIST
   }
 }
@@ -383,13 +387,13 @@ export const Garbage: Iota = {
   equals(that: Iota): boolean {
     return that === Garbage
   },
-  color(): number {
+  get color(): number {
     return 0x505050
   },
   toString(): string {
     return 'GARBAGE'
   },
-  type(): IotaType<Iota> {
+  get type(): IotaType<Iota> {
     return IotaType.GARBAGE
   },
 }
@@ -401,13 +405,13 @@ export const Null: Iota = {
   equals(that: Iota): boolean {
     return that === Null
   },
-  color(): number {
+  get color(): number {
     return 0xAAAAAA
   },
   toString(): string {
     return 'NULL'
   },
-  type(): IotaType<Iota> {
+  get type(): IotaType<Iota> {
     return IotaType.NULL
   },
 }

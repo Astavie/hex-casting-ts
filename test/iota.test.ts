@@ -66,8 +66,8 @@ describe('iota to string', () => {
   it('list', () => {
     expect(Iota.from([]).toString()).toEqual('[]')
     expect(Iota.from([0, 0]).toString()).toEqual('[0.00, 0.00]')
-    expect(Iota.from([0, INTRO]).toString()).toEqual('[0.00<w,qqq>]')
-    expect(Iota.from([INTRO, 0]).toString()).toEqual('[<w,qqq>0.00]')
+    expect(Iota.from([0, INTRO]).toString()).toEqual('[0.00, <w,qqq>]')
+    expect(Iota.from([INTRO, 0]).toString()).toEqual('[<w,qqq>, 0.00]')
     expect(Iota.from([INTRO, RETRO]).toString()).toEqual('[<w,qqq><e,eee>]')
   })
   it('simple numbers', () => {

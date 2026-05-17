@@ -8,12 +8,14 @@ export * from './grid'
 export * from './iota'
 export * from './pattern'
 export * from './vm'
+export type Iota = IotaT
 
 // ---- Methods for your convenience ----
 
 export type PossibleIota = IotaT | PossibleIota[] | boolean | number | string | null | undefined
 export type PossiblePatterns = (Pattern | PossiblePatterns | Vector3 | boolean | number | null)[]
 
+// eslint-disable-next-line ts/no-redeclare
 export const Iota = {
   display: (a: IotaT): (string | HexPattern | IotaT)[] => a.display?.() ?? [a.toString()],
   from: (iota: PossibleIota): IotaT => {

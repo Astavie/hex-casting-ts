@@ -38,12 +38,20 @@ export class HermesFrame implements ContinuationFrame {
     }
 
     const result = vm.apply(newCont).execute(pattern, env)
+    const newResult = new CastResult(
+      result.cast,
+      { ...result.diff },
+      result.sideEffects,
+      result.resolutionType,
+      result.sound,
+    )
+
     if (rest.length > 0) {
-      const existingFrames = result.diff.framePush ?? []
-      result.diff.framePush = [frame, ...existingFrames]
+      const existingFrames = newResult.diff.framePush ?? []
+      newResult.diff.framePush = [frame, ...existingFrames]
     }
-    result.diff.framePop = (result.diff.framePop ?? 0) + 1
-    return result
+    newResult.diff.framePop = (newResult.diff.framePop ?? 0) + 1
+    return newResult
   }
 
   capturesBreak(): boolean {
@@ -85,12 +93,21 @@ export class ThothFrame implements ContinuationFrame {
       // push the next datum to the top of the stack,
       const [head, ...rest] = this.data
       image2.stackPush = [head]
-      image2.framePush = [
-        // put the next Thoth object back on the stack for the next Thoth cycle,
-        new ThothFrame(rest, this.code, stack, this.acc),
-        // and prep the Thoth'd code block for evaluation.
-        new HermesFrame(this.code, false),
-      ]
+
+      if (this.code.length) {
+        image2.framePush = [
+          // put the next Thoth object back on the stack for the next Thoth cycle,
+          new ThothFrame(rest, this.code, stack, this.acc),
+          // and prep the Thoth'd code block for evaluation.
+          new HermesFrame(this.code, false),
+        ]
+      }
+      else {
+        image2.framePush = [
+          // put the next Thoth object back on the stack for the next Thoth cycle,
+          new ThothFrame(rest, this.code, stack, this.acc),
+        ]
+      }
     }
     else {
       // else, dump our final list onto the stack.
@@ -146,7 +163,7 @@ export class VM {
     for (let i = 0; i < tys.length; i++) {
       const ty = tys[i]
       const iota = this.stack[this.stack.length - tys.length + i]
-      if (ty !== null && !iota.type().equals(ty)) {
+      if (ty !== null && !iota.type.equals(ty)) {
         throw new Error('TODO: MISHAP')
       }
       result.push(iota)
@@ -171,7 +188,7 @@ export class VM {
         parenthesized = [...parenthesized, { iota: change.escapePush, escaped: escapeNext }]
       }
 
-      escapeNext = change.escapeConsider ?? (escapeNext && change.escapePush === undefined)
+      escapeNext = change.escapeConsider ?? false
 
       if (change.stackSet) {
         stack = change.stackSet
@@ -180,8 +197,8 @@ export class VM {
         stack = stack.toSpliced(stack.length - change.stackPop, change.stackPop)
       }
       if (change.stackMove) {
-        const iota = stack[change.stackMove.from]
-        stack = stack.toSpliced(change.stackMove.from, 1).toSpliced(change.stackMove.to, 0, iota)
+        const iota = stack[stack.length - 1 - change.stackMove.from]
+        stack = stack.toSpliced(stack.length - 1 - change.stackMove.from, 1).toSpliced(stack.length - 1 - change.stackMove.to, 0, iota)
       }
       if (change.stackPush) {
         stack = [...stack, ...change.stackPush]

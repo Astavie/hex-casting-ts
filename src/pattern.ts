@@ -1,5 +1,5 @@
 import type { Change } from './change'
-import { Boolean, Continuation, Double, IotaType, List, Null, Pattern, Vector3 } from './iota'
+import { Boolean, Continuation, Double, Garbage, IotaType, List, Null, Pattern, Vector3 } from './iota'
 import _numbers from './numbers_2000.json'
 import { CastResult, EvalSound, HermesFrame, ResolvedPatternType, ThothFrame } from './vm'
 
@@ -26,16 +26,18 @@ export const CONSIDERATION = new Pattern('w qqqaw', 'Consideration', { escapeCon
 // abbreviations: refl, purif, distil, exal, decomp, disint, gambit
 // (okay that last one wasn't an abbreviation but you get the idea)
 
-export const VACANT_REFL = new Pattern('ne qqaeaae', 'Vacant Reflection', { stackPush: [List.EMPTY] })
-export const SINGLES_PURIF = new Pattern('e adeeed', 'Single\'s Purification', vm => ({ stackPop: 1, stackPush: [new List(vm.get(null))] }))
-
 export const MINDS_REFL = new Pattern('ne qaq', 'Mind\'s Reflection', (_, env) => ({ stackPush: [env.caster()] }))
 
 export const THOTHS_GAMBIT: Pattern = new Pattern('ne dadad', 'Thoth\'s Gambit', (vm) => {
-  const [instrs, datums] = vm.get(IotaType.LIST, IotaType.LIST)
-  const frame = new ThothFrame(datums.values, instrs.values, null, [])
-  const image2: Change = { stackPop: 2, framePush: [frame] }
-  return new CastResult(THOTHS_GAMBIT, image2, [], ResolvedPatternType.EVALUATED, EvalSound.THOTH)
+  try {
+    const [instrs, datums] = vm.get(IotaType.LIST, IotaType.LIST)
+    const frame = new ThothFrame(datums.values, instrs.values, null, [])
+    const image2: Change = { stackPop: 2, framePush: [frame] }
+    return new CastResult(THOTHS_GAMBIT, image2, [], ResolvedPatternType.EVALUATED, EvalSound.THOTH)
+  }
+  catch {
+    return { stackPush: [Garbage] }
+  }
 })
 
 export const HERMES_GAMBIT: Pattern = new Pattern('se deaqq', 'Hermes\' Gambit', (vm) => {
@@ -94,4 +96,59 @@ export const VECTOR_EXAL = new Pattern('e eqqqqq', 'Vector Exaltation', (vm) => 
   const [x, y, z] = vm.get(IotaType.DOUBLE, IotaType.DOUBLE, IotaType.DOUBLE)
   const result = new Vector3(x.value, y.value, z.value)
   return { stackPop: 3, stackPush: [result] }
+})
+
+export const VECTOR_DISINT = new Pattern('e qeeeee', 'Vector Disintegration', (vm) => {
+  const [vector] = vm.get(IotaType.VECTOR)
+  const { x, y, z } = vector
+  return { stackPop: 1, stackPush: [new Double(x), new Double(y), new Double(z)] }
+})
+
+export const ADDITIVE_DIST = new Pattern('ne waaw', 'Additive Distillation', (vm) => {
+  // TODO: arithmetics
+  const [a, b] = vm.get(null, null)
+  if (a instanceof Double && b instanceof Double) {
+    return { stackPop: 2, stackPush: [new Double(a.value + b.value)] }
+  }
+  else if (a instanceof Vector3 && b instanceof Vector3) {
+    return { stackPop: 2, stackPush: [new Vector3(a.x + b.x, a.y + b.y, a.z + b.z)] }
+  }
+  else {
+    throw new TypeError('unknown arithmetic')
+  }
+})
+
+// List Manipulation
+
+export const VACANT_REFL = new Pattern('ne qqaeaae', 'Vacant Reflection', { stackPush: [List.EMPTY] })
+export const SINGLES_PURIF = new Pattern('e adeeed', 'Single\'s Purification', vm => ({ stackPop: 1, stackPush: [new List(vm.get(null))] }))
+
+export const FLOCKS_GAMBIT = new Pattern('sw ewdqdwe', 'Flock\'s Gambit', (vm) => {
+  const [num] = vm.get(IotaType.DOUBLE)
+
+  const types: null[] = Array.from({ length: num.value }, () => null)
+  const values = vm.apply({ stackPop: 1 }).get(...types)
+
+  return { stackPop: num.value + 1, stackPush: [new List(values)] }
+})
+
+export const FLOCKS_DISINT = new Pattern('nw qwaeawq', 'Flock\'s Disintegration', (vm) => {
+  const [list] = vm.get(IotaType.LIST)
+  return { stackPop: 1, stackPush: list.values }
+})
+
+// Stack Manipulation
+
+export const JESTERS_GAMBIT = new Pattern('e aawdd', 'Jester\'s Gambit', { stackMove: { from: 1, to: 0 } })
+export const ROTATION_GAMBIT = new Pattern('e aaeaa', 'Rotation Gambit', { stackMove: { from: 2, to: 0 } })
+export const ROTATION_GAMBIT_II = new Pattern('ne ddqdd', 'Rotation Gambit II', { stackMove: { from: 0, to: 2 } })
+
+export const GEMINI_DECOMP = new Pattern('e aadaa', 'Gemini Decomposition', (vm) => {
+  const [iota] = vm.get(null)
+  return { stackPush: [iota] }
+})
+
+export const PROSPECTORS_GAMBIT = new Pattern('e aaedd', 'Prospector\'s Gambit', (vm) => {
+  const [iota, _] = vm.get(null, null)
+  return { stackPush: [iota] }
 })
